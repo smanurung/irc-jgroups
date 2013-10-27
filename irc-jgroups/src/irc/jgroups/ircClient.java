@@ -11,8 +11,6 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -95,12 +93,14 @@ public class ircClient extends ReceiverAdapter {
     
     private JChannel findChannel(String name)
     {
-        for(JChannel channel : channelL)
+        if (!channelL.isEmpty())
         {
-            System.out.println("cluster name: "+channel.getClusterName());
-            if(channel.getClusterName().equals(name))
+            for(JChannel channel : channelL)
             {
-                return channel;
+                if(channel.getClusterName().equals(name))
+                {
+                    return channel;
+                }
             }
         }
         return null;
@@ -175,6 +175,7 @@ public class ircClient extends ReceiverAdapter {
                     JChannel channel = findChannel(command[1]);
                     if(channel != null)
                     {
+                        getChannelL().remove(channel);
                         channel.disconnect();
                         channel.close();
                         System.out.println("[SUCCESS] user has left channel "+channel.getName());
