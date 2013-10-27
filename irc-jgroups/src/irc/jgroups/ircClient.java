@@ -11,6 +11,8 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -91,6 +93,19 @@ public class ircClient extends ReceiverAdapter {
         this.channelL = new LinkedList<>();
     }
     
+    private JChannel findChannel(String name)
+    {
+        for(JChannel channel : channelL)
+        {
+            System.out.println("cluster name: "+channel.getClusterName());
+            if(channel.getClusterName().equals(name))
+            {
+                return channel;
+            }
+        }
+        return null;
+    }
+    
     public void start() throws Exception
     {        
         String input;
@@ -157,7 +172,17 @@ public class ircClient extends ReceiverAdapter {
             {
                 if(command.length > 1)
                 {
-                    
+                    JChannel channel = findChannel(command[1]);
+                    if(channel != null)
+                    {
+                        channel.disconnect();
+                        channel.close();
+                        System.out.println("[SUCCESS] user has left channel "+channel.getName());
+                    }
+                    else
+                    {
+                        System.out.println("[WARNING] no channel named "+command[1]);
+                    }
                 }
                 else
                 {
@@ -166,11 +191,43 @@ public class ircClient extends ReceiverAdapter {
             }
             else if (command[0].startsWith("@"))
             {
-//                send to specific channel
+                if (command.length > 1)
+                {
+//                    send to specific channel
+                    String channelName = command[0].substring(1);            
+                    String line = "["  + channelName + "] (" + getNickname() + ") " + command[1];
+
+                    JChannel channel = findChannel(channelName);
+                    if(channel != null)
+                    {
+                        Message message = new Message(null, null, line);
+                        channel.send(message);
+                        System.out.println("[SUCCESS] message sent to channel "+channelName);
+                    }
+                    else
+                    {
+                        System.out.println("[WARNING] no channel named "+channelName);
+                    }
+                }
+                else
+                {
+                    System.out.println("[WARNING] command should followed by message");
+                }
+            }
+            else if(command.length < 1)
+            {
+                System.out.println("[WARNING] you put empty command");
             }
             else
             {
 //                broadcast to all channel
+                for(JChannel channel : channelL)
+                {
+                    String line = "["+channel.getClusterName()+"] ("+getNickname()+") "+command[0];
+                    Message message = new Message(null, null, line);
+                    channel.send(message);
+                }
+                System.out.println("[SUCCESS] message broadcasted");
             }
         }
     }
