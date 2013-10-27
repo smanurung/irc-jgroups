@@ -136,10 +136,12 @@ public class ircClient extends ReceiverAdapter {
                 else
                 {
 //                    generate random username
-                    setNickname("027-defuser");
+                    RandomString randomString = new RandomString(5);
+                    String name = "027-"+randomString.nextString();
+                    setNickname(name);
                     
 //                    response
-                    System.out.println("[SUCCESS] system has generate random username");
+                    System.out.println("[SUCCESS] system has generate random username: "+name);
                 }
             }
             else if(command[0].startsWith("/JOIN"))
