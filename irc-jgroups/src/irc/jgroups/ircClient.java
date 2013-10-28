@@ -6,6 +6,7 @@ package irc.jgroups;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedList;
@@ -15,6 +16,10 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 /**
@@ -22,6 +27,8 @@ import org.jgroups.util.Util;
  * @author FUJITSU
  */
 public class ircClient extends ReceiverAdapter {
+    
+    private int NICKNAME_CONSTANT = 10;
     
     private String nickname;
     private LinkedList<JChannel> channelL;
@@ -87,7 +94,10 @@ public class ircClient extends ReceiverAdapter {
     }
     
     public ircClient(){
-        this.nickname = "027-defuser";
+//        random nickname
+        RandomString randomString = new RandomString(NICKNAME_CONSTANT);
+        this.nickname = "027-"+randomString.nextString();
+        
         this.channelL = new LinkedList<>();
     }
     
@@ -110,6 +120,8 @@ public class ircClient extends ReceiverAdapter {
     {        
         String input;
         Scanner scanner = new Scanner(System.in);
+        
+        System.setProperty("jgroups.bind_addr", "192.168.0.101");
         
         while(true)
         {
@@ -136,7 +148,7 @@ public class ircClient extends ReceiverAdapter {
                 else
                 {
 //                    generate random username
-                    RandomString randomString = new RandomString(5);
+                    RandomString randomString = new RandomString(NICKNAME_CONSTANT);
                     String name = "027-"+randomString.nextString();
                     setNickname(name);
                     
@@ -149,7 +161,17 @@ public class ircClient extends ReceiverAdapter {
                 if(command.length > 1)
                 {
                     String clusterName = command[1];
-                    JChannel channel = new JChannel();
+                    JChannel channel = new JChannel("config/udp.xml");
+//                    JChannel channel = new JChannel(false);
+//                    
+//                    ProtocolStack stack = new ProtocolStack();
+//                    channel.setProtocolStack(stack);
+//                    
+//                    ProtocolStackConfigurator configurator = ConfiguratorFactory.getStackConfigurator(new File("config/udp.xml"));
+//                    stack.setup(configurator.getProtocolStack());
+//                    stack.findProtocol("UDP").setValue("mcast_addr", new IpAddress("192.168.0.101", 45588));
+//                    stack.init();
+                    
                     channel.setReceiver(this);
                     channel.connect(clusterName);
                     
@@ -177,6 +199,7 @@ public class ircClient extends ReceiverAdapter {
                     JChannel channel = findChannel(command[1]);
                     if(channel != null)
                     {
+//                        remove channel from channel list
                         getChannelL().remove(channel);
                         channel.disconnect();
                         channel.close();
